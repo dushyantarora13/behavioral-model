@@ -1,5 +1,5 @@
-FROM p4lang/third-party:stable
-MAINTAINER Seth Fowler <seth.fowler@barefootnetworks.com>
+FROM p4lang/pi:latest
+LABEL maintainer="Seth Fowler <seth.fowler@barefootnetworks.com>"
 
 # Default to using 2 make jobs, which is a good default for CI. If you're
 # building locally or you know there are more cores available, you may want to
@@ -30,7 +30,8 @@ ENV BM_DEPS automake \
             libboost-system-dev \
             libboost-filesystem-dev \
             libboost-thread-dev \
-            libtool
+            libtool \
+            pkg-config
 ENV BM_RUNTIME_DEPS libboost-program-options1.58.0 \
                     libboost-system1.58.0 \
                     libboost-filesystem1.58.0 \
@@ -46,11 +47,17 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y --no-install-recommends $BM_DEPS $BM_RUNTIME_DEPS && \
     ./autogen.sh && \
-    if [ "$GCOV" != "" ]; then ./configure --with-pdfixed --with-stress-tests --enable-debugger --enable-coverage; fi && \
-    if [ "$GCOV" = "" ]; then ./configure --with-pdfixed --with-stress-tests --enable-debugger; fi && \
+    if [ "$GCOV" != "" ]; then ./configure --with-pdfixed --with-pi --with-stress-tests --enable-debugger --enable-coverage; fi && \
+    if [ "$GCOV" = "" ]; then ./configure --with-pdfixed --with-pi --with-stress-tests --enable-debugger; fi && \
+    make && \
+    make install-strip && \
+    cd targets/simple_switch_grpc/ && \
+    ./autogen.sh && \
+    ./configure --with-sysrepo && \
     make && \
     make install-strip && \
     ldconfig && \
+    cd - && \
     (test "$IMAGE_TYPE" = "build" && \
       apt-get purge -y $BM_DEPS && \
       apt-get autoremove --purge -y && \
